@@ -54,7 +54,7 @@ public class Handler : IHandler
 
                 if (client1Task.IsCompleted)
                 {
-                    (var client1Status, client1Task) = ProcessingClientTask(client1Task, id);
+                    (var client1Status, client1Task) = ProcessingClientResponse(client1Task.Result, id);
 
                     if (client1Status != null)
                         return client1Status;
@@ -62,7 +62,7 @@ public class Handler : IHandler
 
                 if (client2Task.IsCompleted)
                 {
-                    (var client2Status, client2Task) = ProcessingClientTask(client2Task, id);
+                    (var client2Status, client2Task) = ProcessingClientResponse(client2Task.Result, id);
 
                     if (client2Status != null)
                         return client2Status;
@@ -94,26 +94,26 @@ public class Handler : IHandler
         return result;
     }
 
-    private (IApplicationStatus? Status, Task<IResponse>? ClientTask) ProcessingClientTask(
-        Task<IResponse> clientTask,
+    private (IApplicationStatus? Status, Task<IResponse>? ClientTask) ProcessingClientResponse(
+        IResponse response,
         string id)
-    {
-        var res = clientTask.Result;
-
-        if (res is SuccessResponse successResponse)
+    {        
+        if (response is SuccessResponse successResponse)
         {
             var result = (IApplicationStatus)new SuccessStatus(successResponse.Id, successResponse.Status);
+
             return (result, null);
         }
-        else if (res is FailureResponse)
+        else if (response is FailureResponse)
         {
             // TODO: Лучше создать IDateTimeService, чтобы можно было использовать DI
             var dt = DateTime.UtcNow;
 
             var result = (IApplicationStatus)new FailureStatus(dt, _retriesCount);
+
             return (result, null);
         }
-        else if (res is RetryResponse retryResponse)
+        else if (response is RetryResponse retryResponse)
         {
             Interlocked.Increment(ref _retriesCount);
 
