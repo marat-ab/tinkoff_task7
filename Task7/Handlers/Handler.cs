@@ -67,7 +67,10 @@ class Handler : IHandler
             }
         }
 
-        var result = (IApplicationStatus)new FailureStatus(null, _retriesCount);
+        // TODO: Лучше создать IDateTimeService, чтобы можно было использовать DI
+        var dt = DateTime.UtcNow;
+
+        var result = (IApplicationStatus)new FailureStatus(dt, _retriesCount);
         return Task.FromResult(result);
     }
 
