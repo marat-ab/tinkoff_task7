@@ -45,7 +45,7 @@ class Handler : IHandler
         var client1Task = GetApplicationStatusWithTimeout(_client1, id, new TimeSpan(0), _token);
         var client2Task = GetApplicationStatusWithTimeout(_client2, id, new TimeSpan(0), _token);
                 
-        while (_token.IsCancellationRequested)
+        while (!_token.IsCancellationRequested)
         {
             
             Task.WaitAny(new Task[] { client1Task, client2Task }, _generalTimeoutInMs, _token);
