@@ -10,7 +10,7 @@ using Task7.Clients;
 
 namespace Task7.Handlers;
 
-class Handler : IHandler
+public class Handler : IHandler
 {
     private readonly int _generalTimeoutInMs = 15000;
 
@@ -36,7 +36,7 @@ class Handler : IHandler
         _token = _cancellationTokenSource.Token;
     }
     
-    public Task<IApplicationStatus> GetApplicationStatus(string id)
+    public async Task<IApplicationStatus> GetApplicationStatus(string id)
     {
         var timer = new System.Timers.Timer(_generalTimeoutInMs);
         timer.Elapsed += OnTimedEvent;
@@ -47,23 +47,30 @@ class Handler : IHandler
                 
         while (!_token.IsCancellationRequested)
         {
-            
-            Task.WaitAny(new Task[] { client1Task, client2Task }, _generalTimeoutInMs, _token);
-
-            if (client1Task.IsCompleted)
+            try
             {
-                (var client1Status, client1Task) = ProcessingClientTask(client1Task, id);
+                await Task.WhenAny(new Task[] { client1Task, client2Task })
+                    .WaitAsync(TimeSpan.FromMilliseconds(_generalTimeoutInMs), _token);
 
-                if (client1Status != null)
-                    return Task.FromResult(client1Status);
+                if (client1Task.IsCompleted)
+                {
+                    (var client1Status, client1Task) = ProcessingClientTask(client1Task, id);
+
+                    if (client1Status != null)
+                        return client1Status;
+                }
+
+                if (client2Task.IsCompleted)
+                {
+                    (var client2Status, client2Task) = ProcessingClientTask(client2Task, id);
+
+                    if (client2Status != null)
+                        return client2Status;
+                }
             }
-
-            if (client2Task.IsCompleted)
+            catch(OperationCanceledException ex)
             {
-                (var client2Status, client2Task) = ProcessingClientTask(client2Task, id);
-
-                if (client2Status != null)
-                    return Task.FromResult(client2Status);
+                _logger.LogInformation(exception: ex, message: ex.Message);
             }
         }
 
@@ -71,7 +78,7 @@ class Handler : IHandler
         var dt = DateTime.UtcNow;
 
         var result = (IApplicationStatus)new FailureStatus(dt, _retriesCount);
-        return Task.FromResult(result);
+        return result;
     }
 
     // Private
