@@ -37,7 +37,7 @@ public class Handler : IHandler
     }
     
     public async Task<IApplicationStatus> GetApplicationStatus(string id)
-    {
+    {        
         var timer = new System.Timers.Timer(_generalTimeoutInMs);
         timer.Elapsed += OnTimedEvent;
         timer.Start();
@@ -73,11 +73,8 @@ public class Handler : IHandler
                 _logger.LogInformation(exception: ex, message: ex.Message);
             }
         }
-
-        // TODO: Лучше создать IDateTimeService, чтобы можно было использовать DI
-        var dt = DateTime.UtcNow;
-
-        var result = (IApplicationStatus)new FailureStatus(dt, _retriesCount);
+                
+        var result = (IApplicationStatus)new FailureStatus(null, _retriesCount);
         return result;
     }
 
